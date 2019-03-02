@@ -1,5 +1,15 @@
-#SPDX-License-Identifier: GPL-2.0
+EXTRA_CFLAGS += -Werror -DCONFIG_MT76_LEDS
 
-obj-$(CONFIG_MT7615E) += mt7615e.o
+CHECK_CC_ENUM_FLAGS = $(NOSTDINC_FLAGS) $(LINUXINCLUDE) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS)
+check-cc-enum = $(call try-run, echo "int v = $(1);" | $(CC) -Werror $(CHECK_CC_ENUM_FLAGS) $(2) -c -x c - -o "$$TMP",y,n)
 
-mt7615e-y := pci.o init.o dma.o eeprom.o main.o mcu.o mac.o
+# backwards compatibility hack
+ifeq ($(call check-cc-enum,IEEE80211_HW_TX_STATUS_NO_AMPDU_LEN,-include net/mac80211.h),n)
+  EXTRA_CFLAGS += -DIEEE80211_HW_TX_STATUS_NO_AMPDU_LEN=IEEE80211_HW_REPORTS_TX_ACK_STATUS
+endif
+
+obj-m := mt7615.o
+
+mt7615-y := \
+	pci.o main.o init.o mcu.o \
+	dma.o mac.o eeprom.o
